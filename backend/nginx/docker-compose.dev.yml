@@ -1,0 +1,21 @@
+services:
+  nginx:
+    container_name: nginx-drive-storage-dev
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      args:
+          NGINX_PORT: ${NGINX_PORT}
+
+    ports:
+      - ${NGINX_PORT}:${NGINX_PORT}
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - drive-storage-network
+    depends_on:
+      - app
+  
+networks:
+  drive-storage-network:
+    name: drive-storage-network
