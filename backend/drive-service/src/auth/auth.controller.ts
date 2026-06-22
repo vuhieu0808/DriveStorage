@@ -26,6 +26,9 @@ export class AuthController {
       };
     } catch (error) {
       console.error('Error during registration:', error);
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
       throw new UnauthorizedException('Registration failed');
     }
   }
@@ -59,31 +62,50 @@ export class AuthController {
       };
     } catch (error) {
       console.error('Error during login:', error);
-      throw new UnauthorizedException('Invalid credentials');
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new UnauthorizedException('Login failed');
     }
   }
 
   @HttpCode(200)
   @Post('refresh')
   async refresh(@Req() req: Request) {
-    const refreshToken = req.cookies?.refreshToken;
-    const accessToken = await this.authService.refresh(refreshToken);
-    return {
-      success: true,
-      message: 'Token refreshed',
-      data: { accessToken },
+    try {
+      const refreshToken = req.cookies?.refreshToken;
+      const { accessToken } = await this.authService.refresh(refreshToken);
+      return {
+        success: true,
+        message: 'Token refreshed',
+        data: { accessToken },
+      };
+    } catch (error) {
+      console.error('Error during token refresh:', error);
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new UnauthorizedException('Invalid refresh token');
     }
   }
 
   @HttpCode(200)
   @Post('logout')
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    const refreshToken = req.cookies?.refreshToken;
-    await this.authService.logout(refreshToken);
-    res.clearCookie('refreshToken');
-    return {
-      success: true,
-      message: 'Logout successful',
-    };
+    try {
+      const refreshToken = req.cookies?.refreshToken;
+      await this.authService.logout(refreshToken);
+      res.clearCookie('refreshToken');
+      return {
+        success: true,
+        message: 'Logout successful',
+      };
+    } catch (error) {
+      console.error('Error during logout:', error);
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new UnauthorizedException('Logout failed');
+    }
   }
 }
