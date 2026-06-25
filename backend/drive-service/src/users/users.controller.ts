@@ -51,9 +51,19 @@ export class UsersController {
   @UseGuards(AuthGuard('jwt'))
   @Put('profile')
   async updateProfile(@Req() req: Request, @Body() body: UpdateProfileDto) {
-    const userId = (req as any).user?.userId;
-    if (!body.userName) throw new BadRequestException('userName required');
-    return this.usersService.updateUserName(userId, body.userName);
+    try {
+      const userId = (req as any).user?.userId;
+      if (!body.userName) throw new BadRequestException('userName required');
+      const result = await this.usersService.updateUserName(userId, body.userName);
+      return {
+        success: true,
+        message: 'Profile updated successfully',
+        data: result,
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      throw new BadRequestException('Failed to update profile');
+    }
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -103,23 +113,5 @@ export class UsersController {
       console.error('Error retrieving storage summary:', error);
       throw new BadRequestException('Failed to retrieve storage summary');
     }
-  }
-
-  @UseGuards(AuthGuard('jwt'))
-  @Get('sessions')
-  async listSessions(@Req() req: Request) {
-    const userId = (req as any).user?.userId;
-    return this.sessionsService.findByUser(userId);
-  }
-
-  @UseGuards(AuthGuard('jwt'))
-  @Delete('sessions/:id')
-  async deleteSession(@Req() req: Request, @Param('id') id: string) {
-    const userId = (req as any).user?.userId;
-    const sessions = await this.sessionsService.findByUser(userId);
-    const target = sessions.find((s) => s.id === id);
-    if (!target) throw new BadRequestException('Session not found');
-    await this.sessionsService.deleteById(id);
-    return { ok: true };
   }
 }
