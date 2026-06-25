@@ -1,0 +1,35 @@
+name: Run Spec Tests
+
+on:
+  push:
+    branches: [ main ] # Chạy khi push lên các nhánh này
+  pull_request:
+    branches: [ main ] # Chạy khi tạo PR vào các nhánh này
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9 
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+          cache-dependency-path: ./backend/drive-service/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: ./backend/drive-service
+        run: pnpm install --frozen-lockfile --ignore-workspace
+
+      - name: Run tests
+        working-directory: ./backend/drive-service
+        run: pnpm test --ignore-workspace
