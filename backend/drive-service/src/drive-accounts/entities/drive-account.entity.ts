@@ -17,4 +17,3 @@ export class DriveAccount {
   @Column({ type: 'varchar', length: 200, nullable: true })
   email: string;
 }
-export class DriveAccount {}

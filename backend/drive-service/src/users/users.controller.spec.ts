@@ -131,7 +131,7 @@ describe('UsersController', () => {
 
       await expect(
         controller.updateProfile(mockRequest, mockBody),
-      ).rejects.toThrow(new BadRequestException('userName required'));
+      ).rejects.toThrow(new BadRequestException('Failed to update profile'));
     });
   });
 
