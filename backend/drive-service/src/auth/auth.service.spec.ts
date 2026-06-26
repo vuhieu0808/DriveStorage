@@ -9,6 +9,7 @@ import { UsersService } from '../users/users.service';
 import { SessionsService } from '../sessions/sessions.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { Session } from '../sessions/entities/session.entity';
 
 jest.mock('bcrypt');
 
@@ -25,6 +26,7 @@ describe('AuthService', () => {
     });
     const mockSessionsService = () => ({
       createSession: jest.fn(),
+      findByUser: jest.fn(),
       findByToken: jest.fn(),
       deleteByToken: jest.fn(),
     });
@@ -125,6 +127,42 @@ describe('AuthService', () => {
       });
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       jwtService.signAsync.mockResolvedValue('mock-accessToken');
+      const existingSession: Session[] = [
+        {
+          id: '1',
+          userId: '1',
+          refreshToken: 'existing-refresh-token',
+          expiredAt: new Date(Date.now() + 10000),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as Session,
+      ];
+      sessionsService.findByUser.mockResolvedValue(existingSession);
+
+      const result = await authService.login(email, password);
+
+      expect(userService.findByEmail).toHaveBeenCalledWith(email);
+      expect(bcrypt.compare).toHaveBeenCalledWith(password, 'hashedpassword');
+      expect(jwtService.signAsync).toHaveBeenCalled();
+      expect(sessionsService.findByUser).toHaveBeenCalledWith('1');
+      expect(result).toHaveProperty('accessToken', 'mock-accessToken');
+      expect(result).toHaveProperty('refreshToken', 'existing-refresh-token');
+    });
+
+    it('should create a new session if no existing session is found', async () => {
+      const email = 'test@example.com';
+      const password = 'password';
+      userService.findByEmail.mockResolvedValue({
+        id: '1',
+        userName: 'testuser',
+        email,
+        hashedPassword: 'hashedpassword',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      jwtService.signAsync.mockResolvedValue('mock-accessToken');
+      sessionsService.findByUser.mockResolvedValue([]);
       sessionsService.createSession.mockResolvedValue({} as any);
 
       const result = await authService.login(email, password);

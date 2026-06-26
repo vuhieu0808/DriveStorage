@@ -64,6 +64,7 @@ export class AuthService {
       let refreshToken: string;
 
       const existingSessions = await this.sessionsService.findByUser(user.id);
+      console.log('Existing sessions for user:', existingSessions);
       if (existingSessions.length > 0) {
         const existingSession = existingSessions[0];
         refreshToken = existingSession.refreshToken;
