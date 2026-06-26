@@ -1,34 +1,78 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Delete,
+  Param,
+  Query,
+  Res,
+  Post,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import type { Response } from 'express';
 import { DriveAccountsService } from './drive-accounts.service';
-import { CreateDriveAccountDto } from './dto/create-drive-account.dto';
-import { UpdateDriveAccountDto } from './dto/update-drive-account.dto';
 
 @Controller('drive-accounts')
 export class DriveAccountsController {
   constructor(private readonly driveAccountsService: DriveAccountsService) {}
 
-  @Post()
-  create(@Body() createDriveAccountDto: CreateDriveAccountDto) {
-    return this.driveAccountsService.create(createDriveAccountDto);
+  @Get('oauth/url')
+  @UseGuards(AuthGuard('jwt'))
+  getOAuthUrl(@Request() req: any) {
+    try {
+      const userId = req.user.userId;
+      const authUrl = this.driveAccountsService.getAuthUrl(userId);
+      return { authUrl };
+    } catch (error) {
+      console.error('Error generating OAuth URL:', error);
+      throw new Error('Failed to generate OAuth URL');
+    }
+  }
+
+  @Get('oauth/callback')
+  async handleOAuthCallback(
+    @Query('code') code: string,
+    @Query('state') state: string,
+    @Res() res: Response,
+  ) {
+    try {
+      await this.driveAccountsService.handleOAuthCallback(code, state);
+      // Redirect to frontend success page
+      const frontendUrl = process.env.FRONTEND_URL;
+      res.redirect(`${frontendUrl}/accounts?success=true`);
+    } catch (error) {
+      console.error('OAuth callback error:', error);
+      const frontendUrl = process.env.FRONTEND_URL;
+      res.redirect(`${frontendUrl}/accounts?error=true`);
+    }
   }
 
   @Get()
-  findAll() {
-    return this.driveAccountsService.findAll();
+  @UseGuards(AuthGuard('jwt'))
+  findAll(@Request() req: any) {
+    const userId = req.user.userId;
+    return this.driveAccountsService.findAllByUserId(userId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.driveAccountsService.findOne(+id);
+  @UseGuards(AuthGuard('jwt'))
+  findOne(@Param('id') id: string, @Request() req: any) {
+    const userId = req.user.userId;
+    return this.driveAccountsService.findOne(id, userId);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateDriveAccountDto: UpdateDriveAccountDto) {
-    return this.driveAccountsService.update(+id, updateDriveAccountDto);
+  @Post(':id/refresh')
+  @UseGuards(AuthGuard('jwt'))
+  refreshQuota(@Param('id') id: string, @Request() req: any) {
+    const userId = req.user.userId;
+    return this.driveAccountsService.refreshQuota(id, userId);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.driveAccountsService.remove(+id);
+  @UseGuards(AuthGuard('jwt'))
+  remove(@Param('id') id: string, @Request() req: any) {
+    const userId = req.user.userId;
+    return this.driveAccountsService.remove(id, userId);
   }
 }

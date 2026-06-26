@@ -61,15 +61,24 @@ export class AuthService {
         this.getJwtSignOptions(),
       );
 
-      const refreshToken = randomBytes(64).toString('hex');
-      const refreshTtl = this.getRefreshTtlSeconds();
-      const expiredAt = new Date(Date.now() + refreshTtl * 1000);
+      let refreshToken: string;
 
-      await this.sessionsService.createSession({
-        userId: user.id,
-        refreshToken,
-        expiredAt,
-      });
+      const existingSessions = await this.sessionsService.findByUser(user.id);
+      if (existingSessions.length > 0) {
+        const existingSession = existingSessions[0];
+        refreshToken = existingSession.refreshToken;
+      }
+      else {
+        refreshToken = randomBytes(64).toString('hex');
+        const refreshTtl = this.getRefreshTtlSeconds();
+        const expiredAt = new Date(Date.now() + refreshTtl * 1000);
+
+        await this.sessionsService.createSession({
+          userId: user.id,
+          refreshToken,
+          expiredAt,
+        });
+      }
 
       return { accessToken, refreshToken };
     } catch (error) {

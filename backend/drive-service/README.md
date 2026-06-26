@@ -1,98 +1,159 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# DriveStorage Backend - Drive Service
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend service cho hệ thống Aggregated Cloud Storage.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Tech Stack
 
-## Description
+- NestJS 11 + TypeScript
+- TypeORM (PostgreSQL/MongoDB compatible)
+- Google APIs (googleapis)
+- JWT Authentication
+- Passport
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Getting Started
 
-## Project setup
+### 1. Install dependencies
 
 ```bash
-$ pnpm install
+pnpm install
 ```
 
-## Compile and run the project
+### 2. Setup database
+
+Tạo database PostgreSQL:
+
+```sql
+CREATE DATABASE drive_service;
+```
+
+### 3. Configure environment variables
+
+Tạo file `.env` trong thư mục `backend/drive-service`:
+
+```env
+# Database
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_USERNAME=postgres
+DATABASE_PASSWORD=your_password
+DATABASE_NAME=drive_service
+DATABASE_SYNC=true
+
+# JWT
+JWT_SECRET=your_jwt_secret_key_here
+JWT_ACCESS_EXPIRES=15m
+JWT_REFRESH_EXPIRES=604800
+
+# OAuth
+OAUTH_REDIRECT_URI=http://localhost:3000/api/drive-accounts/oauth/callback
+FRONTEND_URL=http://localhost:5173
+```
+
+### 4. Run development server
 
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+pnpm start:dev
 ```
 
-## Run tests
+Backend sẽ chạy tại: http://localhost:3000
+
+## Module Structure
+
+### drive-accounts/
+
+Module quản lý tài khoản Google Drive:
+
+**Services:**
+- `GoogleOAuthService`: Xử lý OAuth2 flow với Google
+  - `getAuthUrl()`: Tạo authorization URL
+  - `exchangeCode()`: Đổi authorization code lấy tokens
+  - `refreshAccessToken()`: Refresh expired token
+  - `revokeToken()`: Revoke token khi xóa account
+
+- `GoogleDriveClientService`: Interact với Google Drive API
+  - `getStorageQuota()`: Lấy thông tin quota và email
+  - `uploadFile()`: Upload file lên Drive
+  - `deleteFile()`: Xóa file
+  - `getFileMetadata()`: Lấy metadata
+  - `createResumableUploadUrl()`: Tạo resumable upload URL
+
+- `DriveAccountsService`: Business logic
+  - `getAuthUrl()`: Khởi tạo OAuth flow
+  - `handleOAuthCallback()`: Xử lý callback, lưu tokens
+  - `findAllByUserId()`: Lấy danh sách accounts của user
+  - `refreshQuota()`: Cập nhật quota từ Google
+  - `remove()`: Xóa account và revoke token
+
+**API Endpoints:**
+- `GET /api/drive-accounts/oauth/url` - Lấy Google OAuth URL (protected)
+- `GET /api/drive-accounts/oauth/callback` - OAuth callback handler (public)
+- `GET /api/drive-accounts` - List accounts của user (protected)
+- `GET /api/drive-accounts/:id` - Chi tiết 1 account (protected)
+- `POST /api/drive-accounts/:id/refresh` - Refresh quota (protected)
+- `DELETE /api/drive-accounts/:id` - Xóa account (protected)
+
+## OAuth Configuration
+
+File `backend/config/DriveStorageSecret.json` chứa OAuth credentials từ Google Cloud Console:
+
+```json
+{
+  "web": {
+    "client_id": "your_client_id",
+    "client_secret": "your_client_secret",
+    "redirect_uris": ["http://localhost:3000/api/drive-accounts/oauth/callback"]
+  }
+}
+```
+
+**Lưu ý:** File này không nên commit lên Git. Thêm vào `.gitignore`.
+
+## Google Cloud Setup
+
+1. Tạo project tại [Google Cloud Console](https://console.cloud.google.com)
+2. Enable Google Drive API
+3. Tạo OAuth 2.0 Client ID (Web application)
+4. Thêm Authorized redirect URIs:
+   - `http://localhost:3000/api/drive-accounts/oauth/callback`
+5. Download credentials và lưu vào `backend/config/DriveStorageSecret.json`
+
+## Database Schema
+
+Entity `DriveAccount`:
+
+```typescript
+{
+  id: string (uuid)
+  userId: string (uuid, foreign key)
+  email: string
+  accessToken: string (nullable)
+  refreshToken: string
+  totalSpace: string (bigint)
+  usedSpace: string (bigint)
+  status: string (online/offline/full/error)
+}
+```
+
+Unique constraint: `(userId, email)` - Một user không thể add trùng email.
+
+## Testing
+
+Run unit tests:
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+pnpm test
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Run e2e tests:
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+pnpm test:e2e
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## Next Steps
 
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- [ ] Implement upload/download file modules
+- [ ] Add file chunking logic
+- [ ] Implement space allocation algorithm
+- [ ] Add queue for background token refresh
+- [ ] Add rate limiting for Google API calls

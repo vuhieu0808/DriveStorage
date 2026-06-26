@@ -1,0 +1,40 @@
+services:
+  drive-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      args:
+        PORT: ${DRIVE_SERVICE_PORT}
+        GOOGLE_APP_CLIENT_ID: ${GOOGLE_APP_CLIENT_ID}
+        GOOGLE_APP_PROJECT_ID: ${GOOGLE_APP_PROJECT_ID}
+        GOOGLE_APP_AUTH_URI: ${GOOGLE_APP_AUTH_URI}
+        GOOGLE_APP_TOKEN_URI: ${GOOGLE_APP_TOKEN_URI}
+        GOOGLE_APP_AUTH_PROVIDER_X509_CERT_URL: ${GOOGLE_APP_AUTH_PROVIDER_X509_CERT_URL}
+        GOOGLE_APP_CLIENT_SECRET: ${GOOGLE_APP_CLIENT_SECRET}
+        GOOGLE_APP_REDIRECT_URI: ${GOOGLE_APP_REDIRECT_URI}
+
+    container_name: drive-service-dev
+    ports:
+      - '${DRIVE_SERVICE_PORT:-3000}:${DRIVE_SERVICE_PORT:-3000}'
+    networks:
+      - drive-storage-network
+    volumes:
+      - .:/app
+      - drive_service_node_modules:/app/node_modules
+      - pnpm_store:/pnpm/store
+    env_file:
+      - .env
+    command: pnpm --filter drive-service start:dev
+    depends_on:
+      - rabbitmq
+      - postgres
+
+
+networks:
+  drive-storage-network:
+    name: drive-storage-network
+
+volumes:
+  drive_service_node_modules:
+  pnpm_store:
+    name: pnpm_store

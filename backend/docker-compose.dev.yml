@@ -1,8 +1,9 @@
 version: '3.8'
 name: drive-storage-backend-dev
 
-path:
-  - path: ./nginx/docker-compose.dev.yml
+include:
+  # - path: ./nginx/docker-compose.dev.yml
+  - path: ./drive-service/docker-compose.dev.yml
 
 services:
   rabbitmq:
@@ -40,7 +41,8 @@ services:
 
     volumes:
       - postgres-drive-storage-data:/var/lib/postgresql/data
-      - ./init-multiple-databases.sh:/docker-entrypoint-initdb.d/init-multiple-databases.sh
+      # - ./init-multiple-databases.sh:/docker-entrypoint-initdb.d/init-multiple-databases.sh
+      - ./docs/database.sql:/docker-entrypoint-initdb.d/database.sql
 
 
 networks:
