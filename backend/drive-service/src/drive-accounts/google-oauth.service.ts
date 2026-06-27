@@ -4,12 +4,12 @@ import { google } from 'googleapis';
 @Injectable()
 export class GoogleOAuthService {
   private oauth2Client: any;
+  private readonly scopes: string[] = [
+    'https://www.googleapis.com/auth/drive.file',
+    'https://www.googleapis.com/auth/drive.metadata.readonly',
+  ];
 
   constructor() {
-    console.log('Initializing GoogleOAuthService with the following credentials:');
-    console.log('GOOGLE_APP_CLIENT_ID:', process.env.GOOGLE_APP_CLIENT_ID);
-    console.log('GOOGLE_APP_CLIENT_SECRET:', process.env.GOOGLE_APP_CLIENT_SECRET);
-    console.log('GOOGLE_APP_REDIRECT_URI:', process.env.GOOGLE_APP_REDIRECT_URI);
     this.oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_APP_CLIENT_ID,
       process.env.GOOGLE_APP_CLIENT_SECRET,
@@ -18,14 +18,10 @@ export class GoogleOAuthService {
   }
 
   getAuthUrl(userId: string): string {
-    const scopes = [
-      'https://www.googleapis.com/auth/drive.file',
-      'https://www.googleapis.com/auth/drive.metadata.readonly',
-    ];
 
     return this.oauth2Client.generateAuthUrl({
       access_type: 'offline',
-      scope: scopes,
+      scope: this.scopes,
       state: userId, // Pass userId as state to retrieve after callback
       prompt: 'consent', // Force consent screen to always get refresh token
     });

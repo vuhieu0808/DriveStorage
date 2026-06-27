@@ -69,14 +69,14 @@ export class DriveAccountsService {
     return this.driveAccountsRepository.save(driveAccount);
   }
 
-  async findAllByUserId(userId: string) {
+  async findAllByUserId(userId: string): Promise<DriveAccount[]> {
     return this.driveAccountsRepository.find({
       where: { userId },
       order: { email: 'ASC' },
     });
   }
 
-  async findOne(id: string, userId: string) {
+  async findOne(id: string, userId: string): Promise<DriveAccount> {
     const account = await this.driveAccountsRepository.findOne({
       where: { id, userId },
     });
@@ -105,7 +105,7 @@ export class DriveAccountsService {
     }
   }
 
-  async refreshQuota(id: string, userId: string) {
+  async refreshQuota(id: string, userId: string): Promise<DriveAccount> {
     const account = await this.findOne(id, userId);
 
     try {

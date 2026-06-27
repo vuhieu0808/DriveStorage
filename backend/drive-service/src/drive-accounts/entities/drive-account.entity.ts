@@ -3,7 +3,7 @@ import { IsEmail } from 'class-validator';
 // import { User } from '../../users/entities/user.entity'; 
 
 @Entity({ name: 'drive_accounts' })
-@Unique('uq_drive_account_email', ['userId', 'email']) // 1. Thêm Unique Constraint ở đây
+@Unique('uq_drive_account_email', ['userId', 'email']) 
 export class DriveAccount {
   @PrimaryGeneratedColumn('uuid')
   id!: string;

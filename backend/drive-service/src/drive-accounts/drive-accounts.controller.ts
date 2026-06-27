@@ -12,6 +12,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
 import { DriveAccountsService } from './drive-accounts.service';
+import { DriveAccount } from './entities/drive-account.entity';
 
 @Controller('drive-accounts')
 export class DriveAccountsController {
@@ -50,29 +51,68 @@ export class DriveAccountsController {
 
   @Get()
   @UseGuards(AuthGuard('jwt'))
-  findAll(@Request() req: any) {
-    const userId = req.user.userId;
-    return this.driveAccountsService.findAllByUserId(userId);
+  async findAll(@Request() req: any) {
+    try {
+      const userId = req.user.userId;
+      const driveAccounts: DriveAccount[] = await this.driveAccountsService.findAllByUserId(userId);
+      return {
+        success: true,
+        message: 'Drive accounts fetched successfully',
+        data: driveAccounts,
+      };
+    } catch (error) {
+      console.error('Error fetching drive accounts:', error);
+      throw new Error('Failed to fetch drive accounts');
+    }
   }
 
   @Get(':id')
   @UseGuards(AuthGuard('jwt'))
-  findOne(@Param('id') id: string, @Request() req: any) {
-    const userId = req.user.userId;
-    return this.driveAccountsService.findOne(id, userId);
+  async findOne(@Param('id') id: string, @Request() req: any) {
+    try {
+      const userId = req.user.userId;
+      const driveAccount: DriveAccount = await this.driveAccountsService.findOne(id, userId);
+      return {
+        success: true,
+        message: 'Drive account fetched successfully',
+        data: driveAccount,
+      };
+    } catch (error) {
+      console.error('Error fetching drive account:', error);
+      throw new Error('Failed to fetch drive account');
+    }
   }
 
   @Post(':id/refresh')
   @UseGuards(AuthGuard('jwt'))
-  refreshQuota(@Param('id') id: string, @Request() req: any) {
-    const userId = req.user.userId;
-    return this.driveAccountsService.refreshQuota(id, userId);
+  async refreshQuota(@Param('id') id: string, @Request() req: any) {
+    try {
+      const userId = req.user.userId;
+      const refreshedAccount: DriveAccount = await this.driveAccountsService.refreshQuota(id, userId);
+      return {
+        success: true,
+        message: 'Drive account quota refreshed successfully',
+        data: refreshedAccount,
+      };
+    }catch (error) {
+      console.error('Error refreshing drive account quota:', error);
+      throw new Error('Failed to refresh drive account quota');
+    }
   }
 
   @Delete(':id')
   @UseGuards(AuthGuard('jwt'))
-  remove(@Param('id') id: string, @Request() req: any) {
-    const userId = req.user.userId;
-    return this.driveAccountsService.remove(id, userId);
+  async remove(@Param('id') id: string, @Request() req: any) {
+    try {
+      const userId = req.user.userId;
+      await this.driveAccountsService.remove(id, userId);
+      return {
+        success: true,
+        message: 'Drive account removed successfully',
+      };
+    } catch (error) {
+      console.error('Error removing drive account:', error);
+      throw new Error('Failed to remove drive account');
+    }
   }
 }
